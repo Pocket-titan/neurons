@@ -1,9 +1,8 @@
 import React, { useReducer, useEffect } from 'react'
+import Neuron from './Neuron'
 import useInterval from '@use-it/interval'
 import { produce } from 'immer'
-
-const RADIUS = 20
-const NUM_NEURONS = 10
+import { RADIUS, NUM_NEURONS } from '../constants'
 
 const model = {
   reducer: produce((draft, action) => {
@@ -18,7 +17,16 @@ const model = {
             y,
           }
         })
-
+      case 'update':
+        draft.neurons = draft.neurons.map((neuron, index) => {
+          if (index === action.index) {
+            return {
+              ...neuron,
+              ...action.changes,
+            }
+          }
+          return neuron
+        })
         return
       default:
         return
@@ -42,21 +50,14 @@ const Network = () => {
 
   useEffect(() => {
     const { innerWidth, innerHeight } = window
-    const [width, height] = [
-      Math.floor(innerWidth / (2 * RADIUS)) - 2,
-      Math.floor(innerHeight / (2 * RADIUS)) - 2,
-    ]
+    const [width, height] = [Math.floor(innerWidth / (2 * RADIUS)) - 4, Math.floor(innerHeight / (2 * RADIUS)) - 4]
     let positions = []
     while (positions.length < NUM_NEURONS) {
       let position = {
-        x: Math.round(Math.random() * width * 10) / 10,
-        y: (Math.round(Math.random() * height) * 10) / 10,
+        x: Math.round(Math.random() * width * 10) / 10 + 2,
+        y: (Math.round(Math.random() * height) * 10) / 10 + 2,
       }
-      if (
-        positions.findIndex(
-          ({ x, y }) => x === position.x && y === position.y,
-        ) === -1
-      ) {
+      if (positions.findIndex(({ x, y }) => x === position.x && y === position.y) === -1) {
         positions.push({
           x: position.x * 2 * RADIUS,
           y: position.y * 2 * RADIUS,
@@ -70,7 +71,7 @@ const Network = () => {
   return (
     <div>
       <span>{state.time}</span>
-      {state.neurons.map(neuron => {
+      {state.neurons.map((neuron, index) => {
         const {
           position: { x, y },
         } = neuron
@@ -79,19 +80,7 @@ const Network = () => {
           return null
         }
 
-        return (
-          <div
-            style={{
-              position: 'absolute',
-              height: 2 * RADIUS,
-              width: 2 * RADIUS,
-              backgroundColor: 'steelblue',
-              borderRadius: '50%',
-              left: x,
-              top: y,
-            }}
-          ></div>
-        )
+        return <Neuron {...neuron} update={changes => dispatch({ type: 'update', index, changes })} />
       })}
     </div>
   )
